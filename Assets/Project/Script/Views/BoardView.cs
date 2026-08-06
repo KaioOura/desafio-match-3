@@ -84,6 +84,20 @@ namespace Gazeus.DesafioMatch3.Views
             return DOVirtual.DelayedCall(0.2f, () => { });
         }
 
+        public Vector3 GetMatchCenter(List<Vector2Int> positions)
+        {
+            if (positions.Count == 0) return transform.position;
+
+            Vector3 sum = Vector3.zero;
+            for (int i = 0; i < positions.Count; i++)
+            {
+                Vector2Int position = positions[i];
+                sum += _tileSpots[position.x, position.y].transform.position;
+            }
+
+            return sum / positions.Count;
+        }
+
         public Tween MoveTiles(List<MovedTileInfo> movedTiles)
         {
             GameObject[,] tiles = (GameObject[,])_tiles.Clone();

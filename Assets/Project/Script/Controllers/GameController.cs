@@ -11,10 +11,12 @@ namespace Gazeus.DesafioMatch3.Controllers
     public class GameController : MonoBehaviour
     {
         [SerializeField] private BoardView _boardView;
+        [SerializeField] private ScoreView _scoreView;
         [SerializeField] private int _boardHeight = 10;
         [SerializeField] private int _boardWidth = 10;
 
         private GameService _gameService;
+        private ScoreService _scoreService;
         private bool _isAnimating;
         private int _selectedX = -1;
         private int _selectedY = -1;
@@ -23,6 +25,7 @@ namespace Gazeus.DesafioMatch3.Controllers
         private void Awake()
         {
             _gameService = new GameService();
+            _scoreService = new ScoreService();
             _boardView.TileClicked += OnTileClick;
         }
 
@@ -35,12 +38,19 @@ namespace Gazeus.DesafioMatch3.Controllers
         {
             Board board = _gameService.StartGame(_boardWidth, _boardHeight);
             _boardView.CreateBoard(board);
+
+            _scoreService.Reset();
+            _scoreView.ResetScore(_scoreService.Score);
         }
         #endregion
 
         private void AnimateBoard(List<BoardSequence> boardSequences, int index, Action onComplete)
         {
             BoardSequence boardSequence = boardSequences[index];
+
+            int points = _scoreService.RegisterCascade(boardSequence.MatchedPosition.Count, index);
+            _scoreView.SetScore(_scoreService.Score);
+            _scoreView.ShowPoints(points, _boardView.GetMatchCenter(boardSequence.MatchedPosition));
 
             Sequence sequence = DOTween.Sequence();
             sequence.Append(_boardView.DestroyTiles(boardSequence.MatchedPosition));
