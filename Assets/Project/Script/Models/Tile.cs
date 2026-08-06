@@ -1,8 +1,16 @@
-﻿namespace Gazeus.DesafioMatch3.Models
+namespace Gazeus.DesafioMatch3.Models
 {
     public class Tile
     {
-        public int Id { get; set; }
-        public int Type { get; set; }
+        public static readonly Tile Empty = new Tile(-1);
+
+        public int Type { get; }
+
+        public Tile(int type)
+        {
+            Type = type;
+        }
+
+        public bool IsEmpty => Type < 0;
     }
 }
