@@ -1,37 +1,50 @@
+using System.Collections.Generic;
+using Gazeus.DesafioMatch3.ScriptableObjects;
 using UnityEngine;
 
 namespace Gazeus.DesafioMatch3.Core
 {
     public class ScoreService
     {
-        private const int BasePointsPerTile = 10;
-        private const int MinimumMatchSize = 3;
-        private const float BonusPerExtraTile = 0.5f;
+        private readonly ScoreConfig _scoreConfig;
+        private readonly TileTypeConfig _tileTypeConfig;
 
         public int Score { get; private set; }
+
+        public ScoreService(ScoreConfig scoreConfig, TileTypeConfig tileTypeConfig)
+        {
+            _scoreConfig = scoreConfig;
+            _tileTypeConfig = tileTypeConfig;
+        }
 
         public void Reset()
         {
             Score = 0;
         }
 
-        public int RegisterCascade(int destroyedTileCount, int cascadeIndex)
+        public int RegisterCascade(List<int> destroyedTypes, int cascadeIndex)
         {
-            int points = CalculatePoints(destroyedTileCount, cascadeIndex);
+            int points = CalculatePoints(destroyedTypes, cascadeIndex);
             Score += points;
 
             return points;
         }
 
-        private int CalculatePoints(int destroyedTileCount, int cascadeIndex)
+        private int CalculatePoints(List<int> destroyedTypes, int cascadeIndex)
         {
-            if (destroyedTileCount <= 0) return 0;
+            if (destroyedTypes == null || destroyedTypes.Count == 0) return 0;
 
-            int extraTiles = Mathf.Max(0, destroyedTileCount - MinimumMatchSize);
-            float sizeBonus = 1f + extraTiles * BonusPerExtraTile;
-            int comboMultiplier = cascadeIndex + 1;
+            int tilePoints = 0;
+            for (int i = 0; i < destroyedTypes.Count; i++)
+            {
+                tilePoints += _tileTypeConfig.GetPoints(destroyedTypes[i]);
+            }
 
-            return Mathf.RoundToInt(BasePointsPerTile * destroyedTileCount * sizeBonus) * comboMultiplier;
+            int extraTiles = Mathf.Max(0, destroyedTypes.Count - _scoreConfig.MinimumMatchSize);
+            float sizeBonus = 1f + extraTiles * _scoreConfig.BonusPerExtraTile;
+            float comboMultiplier = 1f + cascadeIndex * _scoreConfig.ComboIncrementPerCascade;
+
+            return Mathf.RoundToInt(tilePoints * sizeBonus * comboMultiplier);
         }
     }
 }

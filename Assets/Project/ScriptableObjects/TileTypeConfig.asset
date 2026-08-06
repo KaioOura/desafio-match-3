@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 22040607c204b2c4d93be53af01f71bd, type: 3}
+  m_Name: TileTypeConfig
+  m_EditorClassIdentifier: DesafioMatch3::Gazeus.DesafioMatch3.ScriptableObjects.TileTypeConfig
+  _tileTypes:
+  - {fileID: 11400000, guid: c80364ae58245b64185e55fead057d28, type: 2}
+  - {fileID: 11400000, guid: 8ddb8c737f999b34a9e72eea51bf002f, type: 2}
+  - {fileID: 11400000, guid: 961683cab578ddc408dd0d3453a2484a, type: 2}
+  - {fileID: 11400000, guid: 5599ff8b94c32bc4ca1df0fb2ade78ba, type: 2}
+  - {fileID: 11400000, guid: 596faf14216a0ce429322c4e4e7752c1, type: 2}

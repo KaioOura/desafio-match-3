@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using DG.Tweening;
 using Gazeus.DesafioMatch3.Core;
 using Gazeus.DesafioMatch3.Models;
+using Gazeus.DesafioMatch3.ScriptableObjects;
 using Gazeus.DesafioMatch3.Views;
 using UnityEngine;
 
@@ -12,6 +13,8 @@ namespace Gazeus.DesafioMatch3.Controllers
     {
         [SerializeField] private BoardView _boardView;
         [SerializeField] private ScoreView _scoreView;
+        [SerializeField] private ScoreConfig _scoreConfig;
+        [SerializeField] private TileTypeConfig _tileTypeConfig;
         [SerializeField] private int _boardHeight = 10;
         [SerializeField] private int _boardWidth = 10;
 
@@ -24,8 +27,8 @@ namespace Gazeus.DesafioMatch3.Controllers
         #region Unity
         private void Awake()
         {
-            _gameService = new GameService();
-            _scoreService = new ScoreService();
+            _gameService = new GameService(_tileTypeConfig);
+            _scoreService = new ScoreService(_scoreConfig, _tileTypeConfig);
             _boardView.TileClicked += OnTileClick;
         }
 
@@ -48,7 +51,7 @@ namespace Gazeus.DesafioMatch3.Controllers
         {
             BoardSequence boardSequence = boardSequences[index];
 
-            int points = _scoreService.RegisterCascade(boardSequence.MatchedPosition.Count, index);
+            int points = _scoreService.RegisterCascade(boardSequence.MatchedTypes, index);
             _scoreView.SetScore(_scoreService.Score);
             _scoreView.ShowPoints(points, _boardView.GetMatchCenter(boardSequence.MatchedPosition));
 

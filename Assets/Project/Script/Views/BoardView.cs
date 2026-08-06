@@ -13,7 +13,7 @@ namespace Gazeus.DesafioMatch3.Views
         public event Action<int, int> TileClicked;
 
         [SerializeField] private GridLayoutGroup _boardContainer;
-        [SerializeField] private TilePrefabRepository _tilePrefabRepository;
+        [SerializeField] private TileTypeConfig _tileTypeConfig;
         [SerializeField] private TileSpotView _tileSpotPrefab;
 
         private GameObject[,] _tiles;
@@ -39,7 +39,7 @@ namespace Gazeus.DesafioMatch3.Views
                     int tileTypeIndex = board[x, y].Type;
                     if (tileTypeIndex > -1)
                     {
-                        GameObject tilePrefab = _tilePrefabRepository.TileTypePrefabList[tileTypeIndex];
+                        GameObject tilePrefab = _tileTypeConfig.GetPrefab(tileTypeIndex);
                         GameObject tile = Instantiate(tilePrefab);
                         tileSpot.SetTile(tile);
 
@@ -59,7 +59,7 @@ namespace Gazeus.DesafioMatch3.Views
 
                 TileSpotView tileSpot = _tileSpots[position.x, position.y];
 
-                GameObject tilePrefab = _tilePrefabRepository.TileTypePrefabList[addedTileInfo.Type];
+                GameObject tilePrefab = _tileTypeConfig.GetPrefab(addedTileInfo.Type);
                 GameObject tile = Instantiate(tilePrefab);
                 tileSpot.SetTile(tile);
 

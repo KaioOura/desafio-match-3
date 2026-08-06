@@ -1,17 +1,30 @@
 using System.Collections.Generic;
 using Gazeus.DesafioMatch3.Models;
+using Gazeus.DesafioMatch3.ScriptableObjects;
 using UnityEngine;
 
 namespace Gazeus.DesafioMatch3.Core
 {
     public class GameService
     {
+        private readonly TileTypeConfig _tileTypeConfig;
+
         private Board _board;
         private List<int> _tileTypes;
 
+        public GameService(TileTypeConfig tileTypeConfig)
+        {
+            _tileTypeConfig = tileTypeConfig;
+        }
+
         public Board StartGame(int boardWidth, int boardHeight)
         {
-            _tileTypes = new List<int> { 0, 1, 2, 3 };
+            _tileTypes = new List<int>(_tileTypeConfig.Count);
+            for (int type = 0; type < _tileTypeConfig.Count; type++)
+            {
+                _tileTypes.Add(type);
+            }
+
             _board = CreateBoard(boardWidth, boardHeight);
 
             return _board;
@@ -39,6 +52,8 @@ namespace Gazeus.DesafioMatch3.Core
                 List<MovedTileInfo> movedTiles = new();
                 List<AddedTileInfo> addedTiles = new();
 
+                List<int> matchedTypes = CollectTypes(board, matchedPositions);
+
                 ClearTiles(board, matchedPositions);
                 ApplyGravity(board, movedTiles);
                 Refill(board, addedTiles);
@@ -46,6 +61,7 @@ namespace Gazeus.DesafioMatch3.Core
                 boardSequences.Add(new BoardSequence
                 {
                     MatchedPosition = matchedPositions,
+                    MatchedTypes = matchedTypes,
                     MovedTiles = movedTiles,
                     AddedTiles = addedTiles
                 });
@@ -78,12 +94,45 @@ namespace Gazeus.DesafioMatch3.Core
                         noMatchTypes.Remove(board[x, y - 1].Type);
                     }
 
-                    int type = noMatchTypes[Random.Range(0, noMatchTypes.Count)];
+                    int type = PickRandomType(noMatchTypes);
                     board[x, y] = new Tile(type);
                 }
             }
 
             return board;
+        }
+
+        private int PickRandomType(List<int> candidates)
+        {
+            float totalWeight = 0f;
+            for (int i = 0; i < candidates.Count; i++)
+            {
+                totalWeight += _tileTypeConfig.GetWeight(candidates[i]);
+            }
+
+            // Todos os pesos zerados: sem isso o sorteio devolveria sempre o ultimo candidato.
+            if (totalWeight <= 0f) return candidates[Random.Range(0, candidates.Count)];
+
+            float roll = Random.value * totalWeight;
+            for (int i = 0; i < candidates.Count; i++)
+            {
+                roll -= _tileTypeConfig.GetWeight(candidates[i]);
+                if (roll < 0f) return candidates[i];
+            }
+
+            return candidates[candidates.Count - 1];
+        }
+
+        private List<int> CollectTypes(Board board, List<Vector2Int> positions)
+        {
+            List<int> types = new(positions.Count);
+            for (int i = 0; i < positions.Count; i++)
+            {
+                Vector2Int position = positions[i];
+                types.Add(board[position.x, position.y].Type);
+            }
+
+            return types;
         }
 
         private bool HasRunOfThree(Board board, int x, int y, int dx, int dy)
@@ -189,7 +238,7 @@ namespace Gazeus.DesafioMatch3.Core
                 {
                     if (!board[x, y].IsEmpty) continue;
 
-                    int type = _tileTypes[Random.Range(0, _tileTypes.Count)];
+                    int type = PickRandomType(_tileTypes);
                     board[x, y] = new Tile(type);
 
                     addedTiles.Add(new AddedTileInfo
