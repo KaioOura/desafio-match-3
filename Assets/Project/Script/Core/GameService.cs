@@ -7,14 +7,18 @@ namespace Gazeus.DesafioMatch3.Core
 {
     public class GameService
     {
+        private const int MaxBoardRerolls = 20;
+
         private readonly TileTypeConfig _tileTypeConfig;
+        private readonly MatchResolver _matchResolver;
 
         private Board _board;
         private List<int> _tileTypes;
 
-        public GameService(TileTypeConfig tileTypeConfig)
+        public GameService(TileTypeConfig tileTypeConfig, SpecialMatchConfig specialMatchConfig)
         {
             _tileTypeConfig = tileTypeConfig;
+            _matchResolver = new MatchResolver(specialMatchConfig);
         }
 
         public Board StartGame(int boardWidth, int boardHeight)
@@ -33,7 +37,7 @@ namespace Gazeus.DesafioMatch3.Core
         public bool IsValidMovement(int fromX, int fromY, int toX, int toY)
         {
             _board.Swap(fromX, fromY, toX, toY);
-            bool createsMatch = HasAnyMatch(_board);
+            bool createsMatch = _matchResolver.HasAnyMatch(_board);
             _board.Swap(fromX, fromY, toX, toY);
 
             return createsMatch;
@@ -45,7 +49,8 @@ namespace Gazeus.DesafioMatch3.Core
             board.Swap(fromX, fromY, toX, toY);
 
             List<BoardSequence> boardSequences = new();
-            List<Vector2Int> matchedPositions = FindMatches(board);
+            
+            List<Vector2Int> matchedPositions = _matchResolver.FindPositionsToClear(board, new Vector2Int(toX, toY));
 
             while (matchedPositions.Count > 0)
             {
@@ -66,7 +71,7 @@ namespace Gazeus.DesafioMatch3.Core
                     AddedTiles = addedTiles
                 });
 
-                matchedPositions = FindMatches(board);
+                matchedPositions = _matchResolver.FindPositionsToClear(board);
             }
 
             _board = board;
@@ -99,7 +104,29 @@ namespace Gazeus.DesafioMatch3.Core
                 }
             }
 
+            RerollLeftoverMatches(board);
+
             return board;
+        }
+        
+        private void RerollLeftoverMatches(Board board)
+        {
+            for (int attempt = 0; attempt < MaxBoardRerolls; attempt++)
+            {
+                List<Match> matches = _matchResolver.FindMatches(board);
+                if (matches.Count == 0) return;
+
+                for (int i = 0; i < matches.Count; i++)
+                {
+                    Vector2Int position = matches[i].Origin;
+
+                    List<int> otherTypes = new(_tileTypes);
+                    otherTypes.Remove(board[position.x, position.y].Type);
+                    if (otherTypes.Count == 0) continue;
+
+                    board[position.x, position.y] = new Tile(PickRandomType(otherTypes));
+                }
+            }
         }
 
         private int PickRandomType(List<int> candidates)
@@ -109,8 +136,7 @@ namespace Gazeus.DesafioMatch3.Core
             {
                 totalWeight += _tileTypeConfig.GetWeight(candidates[i]);
             }
-
-            // Todos os pesos zerados: sem isso o sorteio devolveria sempre o ultimo candidato.
+            
             if (totalWeight <= 0f) return candidates[Random.Range(0, candidates.Count)];
 
             float roll = Random.value * totalWeight;
@@ -133,65 +159,6 @@ namespace Gazeus.DesafioMatch3.Core
             }
 
             return types;
-        }
-
-        private bool HasRunOfThree(Board board, int x, int y, int dx, int dy)
-        {
-            if (!board.Contains(x + dx * 2, y + dy * 2)) return false;
-
-            int type = board[x, y].Type;
-
-            return type == board[x + dx, y + dy].Type &&
-                   type == board[x + dx * 2, y + dy * 2].Type;
-        }
-
-        private bool HasAnyMatch(Board board)
-        {
-            for (int y = 0; y < board.Height; y++)
-            {
-                for (int x = 0; x < board.Width; x++)
-                {
-                    if (HasRunOfThree(board, x, y, 1, 0)) return true;
-                    if (HasRunOfThree(board, x, y, 0, 1)) return true;
-                }
-            }
-
-            return false;
-        }
-
-        private List<Vector2Int> FindMatches(Board board)
-        {
-            bool[,] matched = new bool[board.Width, board.Height];
-
-            for (int y = 0; y < board.Height; y++)
-            {
-                for (int x = 0; x < board.Width; x++)
-                {
-                    MarkRun(board, matched, x, y, 1, 0);
-                    MarkRun(board, matched, x, y, 0, 1);
-                }
-            }
-
-            List<Vector2Int> matchedPositions = new();
-            for (int y = 0; y < board.Height; y++)
-            {
-                for (int x = 0; x < board.Width; x++)
-                {
-                    if (matched[x, y]) matchedPositions.Add(new Vector2Int(x, y));
-                }
-            }
-
-            return matchedPositions;
-        }
-
-        private void MarkRun(Board board, bool[,] matched, int x, int y, int dx, int dy)
-        {
-            if (!HasRunOfThree(board, x, y, dx, dy)) return;
-
-            for (int i = 0; i < 3; i++)
-            {
-                matched[x + dx * i, y + dy * i] = true;
-            }
         }
 
         private void ClearTiles(Board board, List<Vector2Int> positions)

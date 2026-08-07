@@ -15,6 +15,7 @@ namespace Gazeus.DesafioMatch3.Controllers
         [SerializeField] private ScoreView _scoreView;
         [SerializeField] private ScoreConfig _scoreConfig;
         [SerializeField] private TileTypeConfig _tileTypeConfig;
+        [SerializeField] private SpecialMatchConfig _specialMatchConfig;
         [SerializeField] private int _boardHeight = 10;
         [SerializeField] private int _boardWidth = 10;
 
@@ -27,7 +28,7 @@ namespace Gazeus.DesafioMatch3.Controllers
         #region Unity
         private void Awake()
         {
-            _gameService = new GameService(_tileTypeConfig);
+            _gameService = new GameService(_tileTypeConfig, _specialMatchConfig);
             _scoreService = new ScoreService(_scoreConfig, _tileTypeConfig);
             _boardView.TileClicked += OnTileClick;
         }

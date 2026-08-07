@@ -578,6 +578,7 @@ MonoBehaviour:
   _scoreView: {fileID: 1584219847}
   _scoreConfig: {fileID: 11400000, guid: 4e0b16def3119d844b635392d6143513, type: 2}
   _tileTypeConfig: {fileID: 11400000, guid: 77076f5da43acde4ab0932c609da1958, type: 2}
+  _specialMatchConfig: {fileID: 11400000, guid: 5c7d19b34ae2416f9c8b2d0e7f4a1358, type: 2}
   _boardHeight: 10
   _boardWidth: 10
 --- !u!4 &1361904665
