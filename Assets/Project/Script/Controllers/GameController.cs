@@ -57,7 +57,7 @@ namespace Gazeus.DesafioMatch3.Controllers
             _scoreView.ShowPoints(points, _boardView.GetMatchCenter(boardSequence.MatchedPosition));
 
             Sequence sequence = DOTween.Sequence();
-            sequence.Append(_boardView.DestroyTiles(boardSequence.MatchedPosition));
+            sequence.Append(_boardView.ReleaseTiles(boardSequence.MatchedPosition));
             sequence.Append(_boardView.MoveTiles(boardSequence.MovedTiles));
             sequence.Append(_boardView.CreateTile(boardSequence.AddedTiles));
 

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using DG.Tweening;
+using Gazeus.DesafioMatch3.Core.Pooling;
 using Gazeus.DesafioMatch3.Models;
 using Gazeus.DesafioMatch3.ScriptableObjects;
 using UnityEngine;
@@ -16,8 +17,16 @@ namespace Gazeus.DesafioMatch3.Views
         [SerializeField] private TileTypeConfig _tileTypeConfig;
         [SerializeField] private TileSpotView _tileSpotPrefab;
 
+        private PrefabPoolRegistry _tilePools;
         private GameObject[,] _tiles;
         private TileSpotView[,] _tileSpots;
+
+        #region Unity
+        private void Awake()
+        {
+            _tilePools = new PrefabPoolRegistry(transform, "[Tile Pool]");
+        }
+        #endregion
 
         public void CreateBoard(Board board)
         {
@@ -29,6 +38,7 @@ namespace Gazeus.DesafioMatch3.Views
             {
                 for (int x = 0; x < board.Width; x++)
                 {
+                    // Tile spots live as long as the board does, so they stay out of the pool: nothing to recycle.
                     TileSpotView tileSpot = Instantiate(_tileSpotPrefab);
                     tileSpot.transform.SetParent(_boardContainer.transform, false);
                     tileSpot.SetPosition(x, y);
@@ -40,7 +50,7 @@ namespace Gazeus.DesafioMatch3.Views
                     if (tileTypeIndex > -1)
                     {
                         GameObject tilePrefab = _tileTypeConfig.GetPrefab(tileTypeIndex);
-                        GameObject tile = Instantiate(tilePrefab);
+                        GameObject tile = _tilePools.Get(tilePrefab, tileSpot.transform);
                         tileSpot.SetTile(tile);
 
                         _tiles[x, y] = tile;
@@ -60,7 +70,7 @@ namespace Gazeus.DesafioMatch3.Views
                 TileSpotView tileSpot = _tileSpots[position.x, position.y];
 
                 GameObject tilePrefab = _tileTypeConfig.GetPrefab(addedTileInfo.Type);
-                GameObject tile = Instantiate(tilePrefab);
+                GameObject tile = _tilePools.Get(tilePrefab, tileSpot.transform);
                 tileSpot.SetTile(tile);
 
                 _tiles[position.x, position.y] = tile;
@@ -72,12 +82,12 @@ namespace Gazeus.DesafioMatch3.Views
             return sequence;
         }
 
-        public Tween DestroyTiles(List<Vector2Int> matchedPosition)
+        public Tween ReleaseTiles(List<Vector2Int> matchedPosition)
         {
             for (int i = 0; i < matchedPosition.Count; i++)
             {
                 Vector2Int position = matchedPosition[i];
-                Destroy(_tiles[position.x, position.y]);
+                _tilePools.Release(_tiles[position.x, position.y]);
                 _tiles[position.x, position.y] = null;
             }
 

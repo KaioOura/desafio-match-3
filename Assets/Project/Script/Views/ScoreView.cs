@@ -1,4 +1,5 @@
 using DG.Tweening;
+using Gazeus.DesafioMatch3.Core.Pooling;
 using TMPro;
 using UnityEngine;
 
@@ -11,6 +12,16 @@ namespace Gazeus.DesafioMatch3.Views
         [SerializeField] private TMP_Text _scoreLabel;
         [SerializeField] private float _punchDuration = 0.3f;
         [SerializeField] private float _punchScale = 0.25f;
+
+        private PrefabPool _popupPool;
+
+        #region Unity
+        private void Awake()
+        {
+            Transform root = PrefabPool.CreateRoot(transform, "[Popup Pool]");
+            _popupPool = new PrefabPool(_scorePopupPrefab.gameObject, root);
+        }
+        #endregion
 
         public void ResetScore(int score)
         {
@@ -29,9 +40,11 @@ namespace Gazeus.DesafioMatch3.Views
 
         public void ShowPoints(int points, Vector3 worldPosition)
         {
-            ScorePopupView popup = Instantiate(_scorePopupPrefab, _popupContainer);
-            popup.transform.position = worldPosition;
-            popup.Play(points);
+            GameObject instance = _popupPool.Get(_popupContainer);
+            instance.transform.position = worldPosition;
+
+            ScorePopupView popup = instance.GetComponent<ScorePopupView>();
+            popup.Play(points, () => _popupPool.Release(instance));
         }
     }
 }

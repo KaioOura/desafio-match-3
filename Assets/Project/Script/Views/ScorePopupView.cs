@@ -1,3 +1,4 @@
+using System;
 using DG.Tweening;
 using TMPro;
 using UnityEngine;
@@ -11,7 +12,7 @@ namespace Gazeus.DesafioMatch3.Views
         [SerializeField] private float _duration = 0.8f;
         [SerializeField] private float _floatDistance = 80f;
 
-        public void Play(int points)
+        public void Play(int points, Action onComplete)
         {
             _label.text = $"+{points}";
             _canvasGroup.alpha = 1f;
@@ -21,7 +22,9 @@ namespace Gazeus.DesafioMatch3.Views
             Sequence sequence = DOTween.Sequence();
             sequence.Append(transform.DOMoveY(transform.position.y + _floatDistance, _duration).SetEase(Ease.OutCubic));
             sequence.Join(fade.SetEase(Ease.InQuad));
-            sequence.onComplete += () => Destroy(gameObject);
+
+            sequence.SetTarget(transform);
+            sequence.onComplete += () => onComplete();
         }
     }
 }
