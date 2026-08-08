@@ -16,8 +16,7 @@ namespace Gazeus.DesafioMatch3.Controllers
         [SerializeField] private ScoreConfig _scoreConfig;
         [SerializeField] private TileTypeConfig _tileTypeConfig;
         [SerializeField] private SpecialMatchConfig _specialMatchConfig;
-        [SerializeField] private int _boardHeight = 10;
-        [SerializeField] private int _boardWidth = 10;
+        [SerializeField] private LevelConfig _level;
 
         private GameService _gameService;
         private ScoreService _scoreService;
@@ -40,7 +39,13 @@ namespace Gazeus.DesafioMatch3.Controllers
 
         private void Start()
         {
-            Board board = _gameService.StartGame(_boardWidth, _boardHeight);
+            if (_level == null)
+            {
+                Debug.LogError("GameController has no LevelConfig assigned.", this);
+                return;
+            }
+
+            Board board = _gameService.StartGame(_level);
             _boardView.CreateBoard(board);
 
             _scoreService.Reset();

@@ -24,7 +24,7 @@ namespace Gazeus.DesafioMatch3.Core
             _matchResolver = new MatchResolver(specialMatchConfig);
         }
 
-        public Board StartGame(int boardWidth, int boardHeight)
+        public Board StartGame(LevelConfig level)
         {
             _tileTypes = new List<int>(_tileTypeConfig.Count);
             for (int type = 0; type < _tileTypeConfig.Count; type++)
@@ -32,7 +32,7 @@ namespace Gazeus.DesafioMatch3.Core
                 _tileTypes.Add(type);
             }
 
-            _board = CreateBoard(boardWidth, boardHeight);
+            _board = CreateBoard(level.Width, level.Height, level.CreateDeadMask());
 
             return _board;
         }
@@ -82,11 +82,11 @@ namespace Gazeus.DesafioMatch3.Core
             return boardSequences;
         }
 
-        private Board CreateBoard(int width, int height)
+        private Board CreateBoard(int width, int height, bool[,] deadCells)
         {
             for (int attempt = 0; attempt < MaxBoardAttempts; attempt++)
             {
-                Board board = DrawBoard(width, height);
+                Board board = DrawBoard(width, height, deadCells);
                 RedrawMatchedTiles(board, null);
 
                 if (!_matchResolver.HasAnyMatch(board)) return board;
@@ -98,14 +98,16 @@ namespace Gazeus.DesafioMatch3.Core
                 "or use a smaller board.");
         }
 
-        private Board DrawBoard(int width, int height)
+        private Board DrawBoard(int width, int height, bool[,] deadCells)
         {
-            Board board = new(width, height);
+            Board board = new(width, height, deadCells);
 
             for (int y = 0; y < height; y++)
             {
                 for (int x = 0; x < width; x++)
                 {
+                    if (board.IsDead(x, y)) continue;
+
                     board[x, y] = new Tile(PickRandomType(_tileTypes));
                 }
             }
@@ -195,12 +197,12 @@ namespace Gazeus.DesafioMatch3.Core
                 board[position.x, position.y] = Tile.Empty;
             }
         }
-
+        
         private void ApplyGravity(Board board, List<MovedTileInfo> movedTiles)
         {
             for (int x = 0; x < board.Width; x++)
             {
-                int write = board.Height - 1;
+                int write = NextWritableRow(board, x, board.Height - 1);
 
                 for (int read = board.Height - 1; read >= 0; read--)
                 {
@@ -218,9 +220,19 @@ namespace Gazeus.DesafioMatch3.Core
                         });
                     }
 
-                    write--;
+                    write = NextWritableRow(board, x, write - 1);
                 }
             }
+        }
+
+        private int NextWritableRow(Board board, int x, int row)
+        {
+            while (row >= 0 && board.IsDead(x, row))
+            {
+                row--;
+            }
+
+            return row;
         }
 
         private void Refill(Board board, List<AddedTileInfo> addedTiles)
@@ -232,6 +244,7 @@ namespace Gazeus.DesafioMatch3.Core
                 for (int x = board.Width - 1; x >= 0; x--)
                 {
                     if (!board[x, y].IsEmpty) continue;
+                    if (board.IsDead(x, y)) continue;
 
                     board[x, y] = new Tile(PickRandomType(_tileTypes));
                     drawnNow[x, y] = true;

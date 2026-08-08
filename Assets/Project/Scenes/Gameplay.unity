@@ -208,7 +208,7 @@ MonoBehaviour:
   m_ChildAlignment: 4
   m_StartCorner: 0
   m_StartAxis: 0
-  m_CellSize: {x: 95, y: 95}
+  m_CellSize: {x: 94, y: 94}
   m_Spacing: {x: 0, y: 0}
   m_Constraint: 1
   m_ConstraintCount: 10
@@ -748,8 +748,7 @@ MonoBehaviour:
   _scoreConfig: {fileID: 11400000, guid: 4e0b16def3119d844b635392d6143513, type: 2}
   _tileTypeConfig: {fileID: 11400000, guid: 77076f5da43acde4ab0932c609da1958, type: 2}
   _specialMatchConfig: {fileID: 11400000, guid: 5c7d19b34ae2416f9c8b2d0e7f4a1358, type: 2}
-  _boardHeight: 15
-  _boardWidth: 15
+  _level: {fileID: 11400000, guid: 6a92a3b4c5d6e7f8091a2b3c4d5e6f70, type: 2}
 --- !u!4 &1361904665
 Transform:
   m_ObjectHideFlags: 0

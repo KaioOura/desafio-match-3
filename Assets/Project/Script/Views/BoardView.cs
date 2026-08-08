@@ -33,9 +33,16 @@ namespace Gazeus.DesafioMatch3.Views
                     TileSpotView tileSpot = Instantiate(_tileSpotPrefab);
                     tileSpot.transform.SetParent(_boardContainer.transform, false);
                     tileSpot.SetPosition(x, y);
-                    tileSpot.Clicked += TileSpot_Clicked;
 
                     _tileSpots[x, y] = tileSpot;
+
+                    if (board.IsDead(x, y))
+                    {
+                        tileSpot.SetDead();
+                        continue;
+                    }
+
+                    tileSpot.Clicked += TileSpot_Clicked;
 
                     int tileTypeIndex = board[x, y].Type;
                     if (tileTypeIndex > -1)

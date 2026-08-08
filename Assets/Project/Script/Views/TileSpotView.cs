@@ -10,6 +10,8 @@ namespace Gazeus.DesafioMatch3.Views
         public event Action<int, int> Clicked;
 
         [SerializeField] private Button _button;
+        [SerializeField] private Image _deadBackground;
+        [SerializeField] private Color _deadColor = new(0.1f, 0.1f, 0.12f, 1f);
 
         private int _x;
         private int _y;
@@ -27,6 +29,16 @@ namespace Gazeus.DesafioMatch3.Views
             tile.transform.DOKill();
 
             return tile.transform.DOMove(transform.position, 0.3f);
+        }
+        
+        public void SetDead()
+        {
+            _button.enabled = false;
+
+            if (_deadBackground == null) return;
+
+            _deadBackground.color = _deadColor;
+            _deadBackground.enabled = true;
         }
 
         public void SetPosition(int x, int y)
