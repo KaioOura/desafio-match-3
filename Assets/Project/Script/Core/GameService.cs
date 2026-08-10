@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Gazeus.DesafioMatch3.Models;
 using Gazeus.DesafioMatch3.ScriptableObjects;
@@ -7,10 +8,13 @@ namespace Gazeus.DesafioMatch3.Core
 {
     public class GameService
     {
-        private const int MaxBoardRerolls = 20;
+        private const int MaxRedrawAttempts = 20;
+        private const int MaxBoardAttempts = 10;
 
         private readonly TileTypeConfig _tileTypeConfig;
         private readonly MatchResolver _matchResolver;
+        private readonly MoveFinder _moveFinder;
+        private readonly List<int> _drawCandidates = new();
 
         private Board _board;
         private List<int> _tileTypes;
@@ -19,9 +23,10 @@ namespace Gazeus.DesafioMatch3.Core
         {
             _tileTypeConfig = tileTypeConfig;
             _matchResolver = new MatchResolver(specialMatchConfig);
+            _moveFinder = new MoveFinder(_matchResolver);
         }
 
-        public Board StartGame(int boardWidth, int boardHeight)
+        public Board StartGame(LevelConfig level)
         {
             _tileTypes = new List<int>(_tileTypeConfig.Count);
             for (int type = 0; type < _tileTypeConfig.Count; type++)
@@ -29,7 +34,7 @@ namespace Gazeus.DesafioMatch3.Core
                 _tileTypes.Add(type);
             }
 
-            _board = CreateBoard(boardWidth, boardHeight);
+            _board = CreateBoard(level.Width, level.Height, level.CreateDeadMask());
 
             return _board;
         }
@@ -41,6 +46,11 @@ namespace Gazeus.DesafioMatch3.Core
             _board.Swap(fromX, fromY, toX, toY);
 
             return createsMatch;
+        }
+
+        public bool TryFindMove(out Move move)
+        {
+            return _moveFinder.TryFindMove(_board, out move);
         }
 
         public List<BoardSequence> SwapTile(int fromX, int fromY, int toX, int toY)
@@ -79,54 +89,80 @@ namespace Gazeus.DesafioMatch3.Core
             return boardSequences;
         }
 
-        private Board CreateBoard(int width, int height)
+        private Board CreateBoard(int width, int height, bool[,] deadCells)
         {
-            Board board = new(width, height);
+            for (int attempt = 0; attempt < MaxBoardAttempts; attempt++)
+            {
+                Board board = DrawBoard(width, height, deadCells);
+                RedrawMatchedTiles(board, null);
+
+                if (_matchResolver.HasAnyMatch(board)) continue;
+                if (_moveFinder.TryFindMove(board, out _)) return board;
+            }
+
+            throw new InvalidOperationException(
+                $"Could not build a {width}x{height} board free of matches and with at least one " +
+                $"available move out of {_tileTypes.Count} tile types. Add types to the TileTypeConfig, " +
+                "loosen the rules in the SpecialMatchConfig, or use a bigger board.");
+        }
+
+        private Board DrawBoard(int width, int height, bool[,] deadCells)
+        {
+            Board board = new(width, height, deadCells);
 
             for (int y = 0; y < height; y++)
             {
                 for (int x = 0; x < width; x++)
                 {
-                    List<int> noMatchTypes = new(_tileTypes);
+                    if (board.IsDead(x, y)) continue;
 
-                    if (x > 1 && board[x - 1, y].Type == board[x - 2, y].Type)
-                    {
-                        noMatchTypes.Remove(board[x - 1, y].Type);
-                    }
-
-                    if (y > 1 && board[x, y - 1].Type == board[x, y - 2].Type)
-                    {
-                        noMatchTypes.Remove(board[x, y - 1].Type);
-                    }
-
-                    int type = PickRandomType(noMatchTypes);
-                    board[x, y] = new Tile(type);
+                    board[x, y] = new Tile(PickRandomType(_tileTypes));
                 }
             }
-
-            RerollLeftoverMatches(board);
 
             return board;
         }
         
-        private void RerollLeftoverMatches(Board board)
+        private void RedrawMatchedTiles(Board board, bool[,] redrawable)
         {
-            for (int attempt = 0; attempt < MaxBoardRerolls; attempt++)
+            for (int attempt = 0; attempt < MaxRedrawAttempts; attempt++)
             {
                 List<Match> matches = _matchResolver.FindMatches(board);
                 if (matches.Count == 0) return;
 
+                bool[,] redrawnThisPass = new bool[board.Width, board.Height];
+
+                bool redrewAny = false;
                 for (int i = 0; i < matches.Count; i++)
                 {
-                    Vector2Int position = matches[i].Origin;
-
-                    List<int> otherTypes = new(_tileTypes);
-                    otherTypes.Remove(board[position.x, position.y].Type);
-                    if (otherTypes.Count == 0) continue;
-
-                    board[position.x, position.y] = new Tile(PickRandomType(otherTypes));
+                    if (TryRedrawOneTile(board, matches[i], redrawable, redrawnThisPass)) redrewAny = true;
                 }
+
+                if (!redrewAny) return;
             }
+        }
+
+        private bool TryRedrawOneTile(Board board, Match match, bool[,] redrawable, bool[,] redrawnThisPass)
+        {
+            for (int i = 0; i < match.Size; i++)
+            {
+                Vector2Int position = match.Positions[i];
+
+                if (redrawnThisPass[position.x, position.y]) continue;
+                if (redrawable != null && !redrawable[position.x, position.y]) continue;
+
+                _drawCandidates.Clear();
+                _drawCandidates.AddRange(_tileTypes);
+                _drawCandidates.Remove(board[position.x, position.y].Type);
+                if (_drawCandidates.Count == 0) return false;
+
+                board[position.x, position.y] = new Tile(PickRandomType(_drawCandidates));
+                redrawnThisPass[position.x, position.y] = true;
+
+                return true;
+            }
+
+            return false;
         }
 
         private int PickRandomType(List<int> candidates)
@@ -137,9 +173,9 @@ namespace Gazeus.DesafioMatch3.Core
                 totalWeight += _tileTypeConfig.GetWeight(candidates[i]);
             }
             
-            if (totalWeight <= 0f) return candidates[Random.Range(0, candidates.Count)];
+            if (totalWeight <= 0f) return candidates[UnityEngine.Random.Range(0, candidates.Count)];
 
-            float roll = Random.value * totalWeight;
+            float roll = UnityEngine.Random.value * totalWeight;
             for (int i = 0; i < candidates.Count; i++)
             {
                 roll -= _tileTypeConfig.GetWeight(candidates[i]);
@@ -169,12 +205,12 @@ namespace Gazeus.DesafioMatch3.Core
                 board[position.x, position.y] = Tile.Empty;
             }
         }
-
+        
         private void ApplyGravity(Board board, List<MovedTileInfo> movedTiles)
         {
             for (int x = 0; x < board.Width; x++)
             {
-                int write = board.Height - 1;
+                int write = NextWritableRow(board, x, board.Height - 1);
 
                 for (int read = board.Height - 1; read >= 0; read--)
                 {
@@ -192,26 +228,49 @@ namespace Gazeus.DesafioMatch3.Core
                         });
                     }
 
-                    write--;
+                    write = NextWritableRow(board, x, write - 1);
                 }
             }
         }
 
+        private int NextWritableRow(Board board, int x, int row)
+        {
+            while (row >= 0 && board.IsDead(x, row))
+            {
+                row--;
+            }
+
+            return row;
+        }
+
         private void Refill(Board board, List<AddedTileInfo> addedTiles)
         {
+            bool[,] drawnNow = new bool[board.Width, board.Height];
+
             for (int y = board.Height - 1; y >= 0; y--)
             {
                 for (int x = board.Width - 1; x >= 0; x--)
                 {
                     if (!board[x, y].IsEmpty) continue;
+                    if (board.IsDead(x, y)) continue;
 
-                    int type = PickRandomType(_tileTypes);
-                    board[x, y] = new Tile(type);
+                    board[x, y] = new Tile(PickRandomType(_tileTypes));
+                    drawnNow[x, y] = true;
+                }
+            }
+
+            RedrawMatchedTiles(board, drawnNow);
+
+            for (int y = 0; y < board.Height; y++)
+            {
+                for (int x = 0; x < board.Width; x++)
+                {
+                    if (!drawnNow[x, y]) continue;
 
                     addedTiles.Add(new AddedTileInfo
                     {
                         Position = new Vector2Int(x, y),
-                        Type = type
+                        Type = board[x, y].Type
                     });
                 }
             }

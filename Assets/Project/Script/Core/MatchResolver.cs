@@ -44,7 +44,7 @@ namespace Gazeus.DesafioMatch3.Core
             BoardScan scan = new(board);
             MatchRule[] rules = _specialMatchConfig.Rules;
 
-            ClearedTiles cleared = new(board.Width, board.Height);
+            ClearedTiles cleared = new(board);
             bool[,] resolved = new bool[board.Width, board.Height];
             List<Match> matches = new();
 

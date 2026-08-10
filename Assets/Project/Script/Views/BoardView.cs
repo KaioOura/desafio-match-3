@@ -12,14 +12,19 @@ namespace Gazeus.DesafioMatch3.Views
     public class BoardView : MonoBehaviour
     {
         public event Action<int, int> TileClicked;
+        public event Action<BoardSequence, int> CascadeStarted;
+        public event Action CascadeFinished;
 
         [SerializeField] private GridLayoutGroup _boardContainer;
+        [SerializeField] private GridCellSizeFitter _cellSizeFitter;
         [SerializeField] private TileTypeConfig _tileTypeConfig;
         [SerializeField] private TileSpotView _tileSpotPrefab;
 
         private PrefabPoolRegistry _tilePools;
         private GameObject[,] _tiles;
         private TileSpotView[,] _tileSpots;
+        private TileSpotView _hintFrom;
+        private TileSpotView _hintTo;
 
         #region Unity
         private void Awake()
@@ -30,7 +35,9 @@ namespace Gazeus.DesafioMatch3.Views
 
         public void CreateBoard(Board board)
         {
-            _boardContainer.constraintCount = board.Width;
+            ClearHint();
+
+            _cellSizeFitter.SetBoardSize(board.Width, board.Height);
             _tiles = new GameObject[board.Width, board.Height];
             _tileSpots = new TileSpotView[board.Width, board.Height];
 
@@ -42,9 +49,16 @@ namespace Gazeus.DesafioMatch3.Views
                     TileSpotView tileSpot = Instantiate(_tileSpotPrefab);
                     tileSpot.transform.SetParent(_boardContainer.transform, false);
                     tileSpot.SetPosition(x, y);
-                    tileSpot.Clicked += TileSpot_Clicked;
 
                     _tileSpots[x, y] = tileSpot;
+
+                    if (board.IsDead(x, y))
+                    {
+                        tileSpot.SetDead();
+                        continue;
+                    }
+
+                    tileSpot.Clicked += TileSpot_Clicked;
 
                     int tileTypeIndex = board[x, y].Type;
                     if (tileTypeIndex > -1)
@@ -59,7 +73,34 @@ namespace Gazeus.DesafioMatch3.Views
             }
         }
 
-        public Tween CreateTile(List<AddedTileInfo> addedTiles)
+        public void Play(List<BoardSequence> sequences)
+        {
+            if (sequences.Count == 0)
+            {
+                CascadeFinished?.Invoke();
+                return;
+            }
+
+            PlayStep(sequences, 0);
+        }
+
+        private void PlayStep(List<BoardSequence> sequences, int index)
+        {
+            BoardSequence step = sequences[index];
+
+            CascadeStarted?.Invoke(step, index);
+
+            Sequence sequence = DOTween.Sequence();
+            sequence.Append(DestroyTiles(step.MatchedPosition));
+            sequence.Append(MoveTiles(step.MovedTiles));
+            sequence.Append(CreateTile(step.AddedTiles));
+
+            index += 1;
+            if (index < sequences.Count) sequence.onComplete += () => PlayStep(sequences, index);
+            else sequence.onComplete += () => CascadeFinished?.Invoke();
+        }
+
+        private Tween CreateTile(List<AddedTileInfo> addedTiles)
         {
             Sequence sequence = DOTween.Sequence();
             for (int i = 0; i < addedTiles.Count; i++)
@@ -81,7 +122,7 @@ namespace Gazeus.DesafioMatch3.Views
 
             return sequence;
         }
-
+        
         public Tween ReleaseTiles(List<Vector2Int> matchedPosition)
         {
             for (int i = 0; i < matchedPosition.Count; i++)
@@ -92,6 +133,26 @@ namespace Gazeus.DesafioMatch3.Views
             }
 
             return DOVirtual.DelayedCall(0.2f, () => { });
+        }
+
+        public void ShowHint(Move move)
+        {
+            ClearHint();
+
+            _hintFrom = _tileSpots[move.From.x, move.From.y];
+            _hintTo = _tileSpots[move.To.x, move.To.y];
+
+            _hintFrom.SetHighlighted(true);
+            _hintTo.SetHighlighted(true);
+        }
+
+        public void ClearHint()
+        {
+            if (_hintFrom != null) _hintFrom.SetHighlighted(false);
+            if (_hintTo != null) _hintTo.SetHighlighted(false);
+
+            _hintFrom = null;
+            _hintTo = null;
         }
 
         public Vector3 GetMatchCenter(List<Vector2Int> positions)
@@ -108,7 +169,7 @@ namespace Gazeus.DesafioMatch3.Views
             return sum / positions.Count;
         }
 
-        public Tween MoveTiles(List<MovedTileInfo> movedTiles)
+        private Tween MoveTiles(List<MovedTileInfo> movedTiles)
         {
             GameObject[,] tiles = (GameObject[,])_tiles.Clone();
 

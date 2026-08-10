@@ -5,13 +5,15 @@ namespace Gazeus.DesafioMatch3.Models
 {
     public class ClearedTiles
     {
+        private readonly Board _board;
         private readonly bool[,] _alreadyAdded;
 
         public List<Vector2Int> Positions { get; }
 
-        public ClearedTiles(int width, int height)
+        public ClearedTiles(Board board)
         {
-            _alreadyAdded = new bool[width, height];
+            _board = board;
+            _alreadyAdded = new bool[board.Width, board.Height];
             Positions = new List<Vector2Int>();
         }
 
@@ -19,6 +21,8 @@ namespace Gazeus.DesafioMatch3.Models
         {
             //Needed otherwise the same tile would be scored twice
             if (_alreadyAdded[x, y]) return;
+            
+            if (_board[x, y].IsEmpty) return;
 
             _alreadyAdded[x, y] = true;
             Positions.Add(new Vector2Int(x, y));
