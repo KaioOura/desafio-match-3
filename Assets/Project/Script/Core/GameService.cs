@@ -9,10 +9,11 @@ namespace Gazeus.DesafioMatch3.Core
     public class GameService
     {
         private const int MaxRedrawAttempts = 20;
-        private const int MaxBoardAttempts = 5;
+        private const int MaxBoardAttempts = 10;
 
         private readonly TileTypeConfig _tileTypeConfig;
         private readonly MatchResolver _matchResolver;
+        private readonly MoveFinder _moveFinder;
         private readonly List<int> _drawCandidates = new();
 
         private Board _board;
@@ -22,6 +23,7 @@ namespace Gazeus.DesafioMatch3.Core
         {
             _tileTypeConfig = tileTypeConfig;
             _matchResolver = new MatchResolver(specialMatchConfig);
+            _moveFinder = new MoveFinder(_matchResolver);
         }
 
         public Board StartGame(LevelConfig level)
@@ -44,6 +46,11 @@ namespace Gazeus.DesafioMatch3.Core
             _board.Swap(fromX, fromY, toX, toY);
 
             return createsMatch;
+        }
+
+        public bool TryFindMove(out Move move)
+        {
+            return _moveFinder.TryFindMove(_board, out move);
         }
 
         public List<BoardSequence> SwapTile(int fromX, int fromY, int toX, int toY)
@@ -89,13 +96,14 @@ namespace Gazeus.DesafioMatch3.Core
                 Board board = DrawBoard(width, height, deadCells);
                 RedrawMatchedTiles(board, null);
 
-                if (!_matchResolver.HasAnyMatch(board)) return board;
+                if (_matchResolver.HasAnyMatch(board)) continue;
+                if (_moveFinder.TryFindMove(board, out _)) return board;
             }
 
             throw new InvalidOperationException(
-                $"Could not build a {width}x{height} board free of matches out of {_tileTypes.Count} tile " +
-                "types. Add types to the TileTypeConfig, loosen the rules in the SpecialMatchConfig, " +
-                "or use a smaller board.");
+                $"Could not build a {width}x{height} board free of matches and with at least one " +
+                $"available move out of {_tileTypes.Count} tile types. Add types to the TileTypeConfig, " +
+                "loosen the rules in the SpecialMatchConfig, or use a bigger board.");
         }
 
         private Board DrawBoard(int width, int height, bool[,] deadCells)

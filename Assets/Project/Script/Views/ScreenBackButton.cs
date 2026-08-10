@@ -1,4 +1,4 @@
-using Gazeus.DesafioMatch3.Controllers;
+using Gazeus.DesafioMatch3.Core;
 
 namespace Gazeus.DesafioMatch3.Views
 {

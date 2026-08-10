@@ -1,11 +1,14 @@
+using System;
 using UnityEngine;
 using UnityEngine.UI;
 
 namespace Gazeus.DesafioMatch3.Views
 {
     [RequireComponent(typeof(Button))]
-    public abstract class ButtonView : MonoBehaviour
+    public class ButtonView : MonoBehaviour
     {
+        public event Action Clicked;
+
         private Button _button;
 
         #region Unity
@@ -21,6 +24,9 @@ namespace Gazeus.DesafioMatch3.Views
         }
         #endregion
 
-        protected abstract void OnClick();
+        protected virtual void OnClick()
+        {
+            Clicked?.Invoke();
+        }
     }
 }

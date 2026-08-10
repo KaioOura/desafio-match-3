@@ -1,4 +1,4 @@
-using Gazeus.DesafioMatch3.Controllers;
+using Gazeus.DesafioMatch3.Core;
 using Gazeus.DesafioMatch3.ScriptableObjects;
 using UnityEngine;
 

@@ -1,5 +1,5 @@
 using System;
-using Gazeus.DesafioMatch3.Controllers;
+using Gazeus.DesafioMatch3.Core;
 using Gazeus.DesafioMatch3.ScriptableObjects;
 using UnityEngine;
 using UnityEngine.UI;
@@ -7,7 +7,7 @@ using UnityEngine.UI;
 namespace Gazeus.DesafioMatch3.Views
 {
     [RequireComponent(typeof(Canvas), typeof(GraphicRaycaster))]
-    public class UIScreen : MonoBehaviour
+    public class UIScreen : MonoBehaviour, IScreen
     {
         public event Action Opened;
         public event Action Closed;
@@ -20,6 +20,7 @@ namespace Gazeus.DesafioMatch3.Views
         private GraphicRaycaster _raycaster;
         private ScreenManager _manager;
 
+        public string Name => name;
         public ScreenDefinition Definition => _definition;
         public bool OpenOnRegister => _openOnRegister;
         public bool IsVisible => _canvas != null && _canvas.enabled;

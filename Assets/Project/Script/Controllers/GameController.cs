@@ -1,6 +1,4 @@
 using System;
-using System.Collections.Generic;
-using DG.Tweening;
 using Gazeus.DesafioMatch3.Core;
 using Gazeus.DesafioMatch3.Models;
 using Gazeus.DesafioMatch3.ScriptableObjects;
@@ -11,6 +9,10 @@ namespace Gazeus.DesafioMatch3.Controllers
 {
     public class GameController : MonoBehaviour
     {
+        public event Action<Move> MoveAvailable;
+        public event Action NoMovesLeft;
+        public event Action PlayerActed;
+
         [SerializeField] private BoardView _boardView;
         [SerializeField] private ScoreView _scoreView;
         [SerializeField] private ScoreConfig _scoreConfig;
@@ -20,6 +22,8 @@ namespace Gazeus.DesafioMatch3.Controllers
 
         private GameService _gameService;
         private ScoreService _scoreService;
+        private Move _availableMove;
+        private bool _hasAvailableMove;
         private bool _isAnimating;
         private int _selectedX = -1;
         private int _selectedY = -1;
@@ -30,11 +34,15 @@ namespace Gazeus.DesafioMatch3.Controllers
             _gameService = new GameService(_tileTypeConfig, _specialMatchConfig);
             _scoreService = new ScoreService(_scoreConfig, _tileTypeConfig);
             _boardView.TileClicked += OnTileClick;
+            _boardView.CascadeStarted += RegisterScore;
+            _boardView.CascadeFinished += OnBoardSettled;
         }
 
         private void OnDestroy()
         {
             _boardView.TileClicked -= OnTileClick;
+            _boardView.CascadeStarted -= RegisterScore;
+            _boardView.CascadeFinished -= OnBoardSettled;
         }
 
         private void Start()
@@ -51,36 +59,43 @@ namespace Gazeus.DesafioMatch3.Controllers
 
             _scoreService.Reset();
             _scoreView.ResetScore(_scoreService.Score);
+
+            EvaluateBoard();
         }
         #endregion
 
-        private void AnimateBoard(List<BoardSequence> boardSequences, int index, Action onComplete)
+        private void RegisterScore(BoardSequence sequence, int index)
         {
-            BoardSequence boardSequence = boardSequences[index];
-
-            int points = _scoreService.RegisterCascade(boardSequence.MatchedTypes, index);
+            int points = _scoreService.RegisterCascade(sequence.MatchedTypes, index);
             _scoreView.SetScore(_scoreService.Score);
-            _scoreView.ShowPoints(points, _boardView.GetMatchCenter(boardSequence.MatchedPosition));
+            _scoreView.ShowPoints(points, _boardView.GetMatchCenter(sequence.MatchedPosition));
+        }
 
-            Sequence sequence = DOTween.Sequence();
-            sequence.Append(_boardView.DestroyTiles(boardSequence.MatchedPosition));
-            sequence.Append(_boardView.MoveTiles(boardSequence.MovedTiles));
-            sequence.Append(_boardView.CreateTile(boardSequence.AddedTiles));
+        private void EvaluateBoard()
+        {
+            _hasAvailableMove = _gameService.TryFindMove(out _availableMove);
 
-            index += 1;
-            if (index < boardSequences.Count)
-            {
-                sequence.onComplete += () => AnimateBoard(boardSequences, index, onComplete);
-            }
-            else
-            {
-                sequence.onComplete += () => onComplete();
-            }
+            NotifyMoveAvailability();
+        }
+
+        private void NotifyMoveAvailability()
+        {
+            if (_hasAvailableMove) MoveAvailable?.Invoke(_availableMove);
+            else NoMovesLeft?.Invoke();
+        }
+
+        private void OnBoardSettled()
+        {
+            _isAnimating = false;
+
+            EvaluateBoard();
         }
 
         private void OnTileClick(int x, int y)
         {
             if (_isAnimating) return;
+
+            PlayerActed?.Invoke();
 
             if (_selectedX > -1 && _selectedY > -1)
             {
@@ -88,6 +103,8 @@ namespace Gazeus.DesafioMatch3.Controllers
                 {
                     _selectedX = -1;
                     _selectedY = -1;
+
+                    NotifyMoveAvailability();
                 }
                 else
                 {
@@ -97,12 +114,16 @@ namespace Gazeus.DesafioMatch3.Controllers
                         bool isValid = _gameService.IsValidMovement(_selectedX, _selectedY, x, y);
                         if (isValid)
                         {
-                            List<BoardSequence> swapResult = _gameService.SwapTile(_selectedX, _selectedY, x, y);
-                            AnimateBoard(swapResult, 0, () => _isAnimating = false);
+                            _boardView.Play(_gameService.SwapTile(_selectedX, _selectedY, x, y));
                         }
                         else
                         {
-                            _boardView.SwapTiles(x, y, _selectedX, _selectedY).onComplete += () => _isAnimating = false;
+                            _boardView.SwapTiles(x, y, _selectedX, _selectedY).onComplete += () =>
+                            {
+                                _isAnimating = false;
+
+                                NotifyMoveAvailability();
+                            };
                         }
                         _selectedX = -1;
                         _selectedY = -1;

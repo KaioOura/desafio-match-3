@@ -15,7 +15,8 @@ namespace Gazeus.DesafioMatch3.Core
 
         public ScreenDefinition Root { get; private set; }
         public IReadOnlyList<ScreenDefinition> Overlays => _overlays;
-        public bool CanGoBack => _overlays.Count > 0;
+        public bool HasOverlay => _overlays.Count > 0;
+        public bool CanGoBack => HasOverlay && _overlays[_overlays.Count - 1].CanGoBack;
 
         public bool IsRegistered(ScreenDefinition definition)
         {
@@ -46,7 +47,7 @@ namespace Gazeus.DesafioMatch3.Core
 
         public void Back()
         {
-            if (_overlays.Count == 0) return;
+            if (!CanGoBack) return;
 
             CloseOverlay(_overlays.Count - 1);
         }

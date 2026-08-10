@@ -12,7 +12,11 @@ namespace Gazeus.DesafioMatch3.Views
         [SerializeField] private Button _button;
         [SerializeField] private Image _deadBackground;
         [SerializeField] private Color _deadColor = new(0.1f, 0.1f, 0.12f, 1f);
+        [SerializeField] private Image _highlight;
+        [SerializeField] private Color _highlightColor = new(1f, 1f, 1f, 0.55f);
+        [SerializeField] private float _highlightPulseDuration = 0.45f;
 
+        private Tween _highlightTween;
         private int _x;
         private int _y;
 
@@ -20,6 +24,12 @@ namespace Gazeus.DesafioMatch3.Views
         private void Awake()
         {
             _button.onClick.AddListener(OnTileClick);
+        }
+
+        private void OnDestroy()
+        {
+            _highlightTween?.Kill();
+            _highlightTween = null;
         }
         #endregion
 
@@ -41,6 +51,28 @@ namespace Gazeus.DesafioMatch3.Views
             _deadBackground.enabled = true;
         }
 
+        public void SetHighlighted(bool highlighted)
+        {
+            if (_highlight == null) return;
+
+            _highlightTween?.Kill();
+            _highlightTween = null;
+
+            if (!highlighted)
+            {
+                _highlight.enabled = false;
+                return;
+            }
+
+            _highlight.transform.SetAsLastSibling();
+            _highlight.color = new Color(_highlightColor.r, _highlightColor.g, _highlightColor.b, 0f);
+            _highlight.enabled = true;
+
+            _highlightTween = DOTween
+                .To(() => _highlight.color.a, SetHighlightAlpha, _highlightColor.a, _highlightPulseDuration)
+                .SetLoops(-1, LoopType.Yoyo);
+        }
+
         public void SetPosition(int x, int y)
         {
             _x = x;
@@ -51,6 +83,11 @@ namespace Gazeus.DesafioMatch3.Views
         {
             tile.transform.SetParent(transform, false);
             tile.transform.position = transform.position;
+        }
+
+        private void SetHighlightAlpha(float alpha)
+        {
+            _highlight.color = new Color(_highlightColor.r, _highlightColor.g, _highlightColor.b, alpha);
         }
 
         private void OnTileClick()

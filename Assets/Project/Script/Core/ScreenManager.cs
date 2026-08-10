@@ -1,11 +1,9 @@
 using System.Collections.Generic;
-using Gazeus.DesafioMatch3.Core;
 using Gazeus.DesafioMatch3.Models;
 using Gazeus.DesafioMatch3.ScriptableObjects;
-using Gazeus.DesafioMatch3.Views;
 using UnityEngine;
 
-namespace Gazeus.DesafioMatch3.Controllers
+namespace Gazeus.DesafioMatch3.Core
 {
     public class ScreenManager : PersistentSingleton<ScreenManager>
     {
@@ -13,7 +11,7 @@ namespace Gazeus.DesafioMatch3.Controllers
         private const int OverlaySortingStep = 10;
 
         private readonly ScreenNavigationService _navigation = new();
-        private readonly Dictionary<ScreenDefinition, UIScreen> _screens = new();
+        private readonly Dictionary<ScreenDefinition, IScreen> _screens = new();
 
         public bool CanGoBack => _navigation.CanGoBack;
 
@@ -42,15 +40,16 @@ namespace Gazeus.DesafioMatch3.Controllers
         }
         #endregion
 
-        public void Register(UIScreen screen)
+        public void Register(IScreen screen)
         {
             ScreenDefinition definition = screen.Definition;
 
-            if (_screens.TryGetValue(definition, out UIScreen registered))
+            if (_screens.TryGetValue(definition, out IScreen registered))
             {
                 if (registered == screen) return;
 
-                Debug.LogError($"Screen '{definition.name}' is already registered by '{registered.name}'.", screen);
+                Debug.LogError($"Screen '{definition.name}' is already registered by " +
+                               $"'{registered.Name}', so '{screen.Name}' was ignored.");
                 return;
             }
 
@@ -88,14 +87,14 @@ namespace Gazeus.DesafioMatch3.Controllers
         {
             _navigation.Back();
         }
-        
 
-        public void Unregister(UIScreen screen)
+
+        public void Unregister(IScreen screen)
         {
             ScreenDefinition definition = screen.Definition;
             if (definition == null) return;
 
-            if (!_screens.TryGetValue(definition, out UIScreen registered) || registered != screen) return;
+            if (!_screens.TryGetValue(definition, out IScreen registered) || registered != screen) return;
 
             _screens.Remove(definition);
             _navigation.Unregister(definition);
@@ -116,7 +115,7 @@ namespace Gazeus.DesafioMatch3.Controllers
 
         private void RefreshSorting()
         {
-            if (_navigation.Root != null && _screens.TryGetValue(_navigation.Root, out UIScreen root))
+            if (_navigation.Root != null && _screens.TryGetValue(_navigation.Root, out IScreen root))
             {
                 root.SetSortingOrder(RootSortingOrder);
             }
@@ -124,7 +123,7 @@ namespace Gazeus.DesafioMatch3.Controllers
             IReadOnlyList<ScreenDefinition> overlays = _navigation.Overlays;
             for (int i = 0; i < overlays.Count; i++)
             {
-                if (_screens.TryGetValue(overlays[i], out UIScreen overlay))
+                if (_screens.TryGetValue(overlays[i], out IScreen overlay))
                 {
                     overlay.SetSortingOrder(OverlaySortingStep * (i + 1));
                 }
