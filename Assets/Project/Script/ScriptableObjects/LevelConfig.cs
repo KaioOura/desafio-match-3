@@ -7,11 +7,13 @@ namespace Gazeus.DesafioMatch3.ScriptableObjects
     {
         public const int MinimumSize = 3;
 
+        [SerializeField] private string _displayName;
         [SerializeField] private int _width = 10;
         [SerializeField] private int _height = 10;
-        
+
         [HideInInspector][SerializeField] private bool[] _deadCells;
 
+        public string DisplayName => string.IsNullOrEmpty(_displayName) ? name : _displayName;
         public int Width => _width;
         public int Height => _height;
 

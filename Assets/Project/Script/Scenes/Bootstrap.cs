@@ -9,12 +9,6 @@ namespace Gazeus.DesafioMatch3.Scenes
         #region Unity
         private void Start()
         {
-            if (SceneLoader.Instance == null)
-            {
-                Debug.LogError("Boot scene has no SceneLoader.", this);
-                return;
-            }
-
             SceneLoader.Instance.Load(_firstScene);
         }
         #endregion

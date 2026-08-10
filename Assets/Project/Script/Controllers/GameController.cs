@@ -39,13 +39,14 @@ namespace Gazeus.DesafioMatch3.Controllers
 
         private void Start()
         {
-            if (_level == null)
+            LevelConfig level = LevelSession.Current != null ? LevelSession.Current : _level;
+            if (level == null)
             {
                 Debug.LogError("GameController has no LevelConfig assigned.", this);
                 return;
             }
 
-            Board board = _gameService.StartGame(_level);
+            Board board = _gameService.StartGame(level);
             _boardView.CreateBoard(board);
 
             _scoreService.Reset();
