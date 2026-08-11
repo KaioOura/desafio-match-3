@@ -2,6 +2,7 @@ using System;
 using Gazeus.DesafioMatch3.Core;
 using Gazeus.DesafioMatch3.Models;
 using Gazeus.DesafioMatch3.ScriptableObjects;
+using Gazeus.DesafioMatch3.ScriptableObjects.Feedback;
 using Gazeus.DesafioMatch3.Views;
 using UnityEngine;
 
@@ -15,6 +16,10 @@ namespace Gazeus.DesafioMatch3.Controllers
 
         [SerializeField] private BoardView _boardView;
         [SerializeField] private ScoreView _scoreView;
+        [SerializeField] private EffectsView _effects;
+        [SerializeField] private EffectCue _selectCue;
+        [SerializeField] private EffectCue _deselectCue;
+        [SerializeField] private EffectCue _invalidSwapCue;
         [SerializeField] private ScoreConfig _scoreConfig;
         [SerializeField] private TileTypeConfig _tileTypeConfig;
         [SerializeField] private SpecialMatchConfig _specialMatchConfig;
@@ -70,7 +75,7 @@ namespace Gazeus.DesafioMatch3.Controllers
             _scoreView.SetScore(_scoreService.Score);
             _scoreView.ShowPoints(points, _boardView.GetMatchCenter(sequence.MatchedPosition));
         }
-        
+
         private void EvaluateBoard()
         {
             _hasAvailableMove = _gameService.TryFindMove(out _availableMove);
@@ -104,11 +109,16 @@ namespace Gazeus.DesafioMatch3.Controllers
                     _selectedX = -1;
                     _selectedY = -1;
 
+                    _boardView.ClearSelection();
+                    _effects.PlaySound(_deselectCue);
+
                     NotifyMoveAvailability();
                 }
                 else
                 {
                     _isAnimating = true;
+                    _boardView.ClearSelection();
+                    _effects.PlaySound(_selectCue);
                     _boardView.SwapTiles(_selectedX, _selectedY, x, y).onComplete += () =>
                     {
                         bool isValid = _gameService.IsValidMovement(_selectedX, _selectedY, x, y);
@@ -118,6 +128,7 @@ namespace Gazeus.DesafioMatch3.Controllers
                         }
                         else
                         {
+                            _effects.Play(_invalidSwapCue, _boardView.GetTilePosition(x, y));
                             _boardView.SwapTiles(x, y, _selectedX, _selectedY).onComplete += () =>
                             {
                                 _isAnimating = false;
@@ -134,6 +145,9 @@ namespace Gazeus.DesafioMatch3.Controllers
             {
                 _selectedX = x;
                 _selectedY = y;
+
+                _boardView.SetSelected(x, y);
+                _effects.PlaySound(_selectCue);
             }
         }
     }

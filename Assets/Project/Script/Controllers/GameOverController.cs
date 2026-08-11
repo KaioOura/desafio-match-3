@@ -1,5 +1,7 @@
 using Gazeus.DesafioMatch3.Core;
 using Gazeus.DesafioMatch3.ScriptableObjects;
+using Gazeus.DesafioMatch3.ScriptableObjects.Feedback;
+using Gazeus.DesafioMatch3.Views;
 using UnityEngine;
 
 namespace Gazeus.DesafioMatch3.Controllers
@@ -8,6 +10,8 @@ namespace Gazeus.DesafioMatch3.Controllers
     {
         [SerializeField] private GameController _game;
         [SerializeField] private ScreenDefinition _screen;
+        [SerializeField] private EffectsView _effects;
+        [SerializeField] private EffectCue _gameOverCue;
 
         #region Unity
         private void Awake()
@@ -23,6 +27,8 @@ namespace Gazeus.DesafioMatch3.Controllers
 
         private void OnNoMovesLeft()
         {
+            _effects.PlaySound(_gameOverCue);
+
             ScreenManager.Instance.Open(_screen);
         }
     }

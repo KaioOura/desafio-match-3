@@ -16,11 +16,16 @@ namespace Gazeus.DesafioMatch3.Views
         {
             _label.text = $"+{points}";
             _canvasGroup.alpha = 1f;
-            
+
+            RectTransform rect = (RectTransform)transform;
+            Vector2 target = rect.anchoredPosition + Vector2.up * _floatDistance;
+
             Tween fade = DOTween.To(() => _canvasGroup.alpha, alpha => _canvasGroup.alpha = alpha, 0f, _duration);
 
+            Tween move = DOTween.To(() => rect.anchoredPosition, value => rect.anchoredPosition = value, target, _duration);
+
             Sequence sequence = DOTween.Sequence();
-            sequence.Append(transform.DOMoveY(transform.position.y + _floatDistance, _duration).SetEase(Ease.OutCubic));
+            sequence.Append(move.SetEase(Ease.OutCubic));
             sequence.Join(fade.SetEase(Ease.InQuad));
 
             sequence.SetTarget(transform);
