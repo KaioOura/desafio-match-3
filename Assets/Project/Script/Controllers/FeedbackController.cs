@@ -12,6 +12,7 @@ namespace Gazeus.DesafioMatch3.Controllers
         private GameController _game;
         private BoardView _boardView;
         private HintController _hint;
+        private ScoreController _score;
         private EffectsView _effects;
         private FeedbackConfig _config;
 
@@ -34,15 +35,17 @@ namespace Gazeus.DesafioMatch3.Controllers
             }
 
             if (_hint != null) _hint.HintShown -= OnHintShown;
+            if (_score != null) _score.PointsScored -= OnPointsScored;
         }
         #endregion
 
         public void Initialize(GameController game, BoardView boardView, HintController hint,
-            EffectsView effects, FeedbackConfig config)
+            ScoreController score, EffectsView effects, FeedbackConfig config)
         {
             _game = game;
             _boardView = boardView;
             _hint = hint;
+            _score = score;
             _effects = effects;
             _config = config;
 
@@ -56,6 +59,7 @@ namespace Gazeus.DesafioMatch3.Controllers
             _boardView.TilesSpawned += OnTilesSpawned;
 
             _hint.HintShown += OnHintShown;
+            _score.PointsScored += OnPointsScored;
         }
 
         private void OnTileSelected(int x, int y)
@@ -105,6 +109,11 @@ namespace Gazeus.DesafioMatch3.Controllers
         private void OnHintShown()
         {
             _effects.PlaySound(_config.Hint);
+        }
+
+        private void OnPointsScored(int points, Vector3 worldPosition)
+        {
+            _effects.ShowPoints(points, worldPosition);
         }
     }
 }

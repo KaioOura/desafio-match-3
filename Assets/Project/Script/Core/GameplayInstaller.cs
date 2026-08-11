@@ -16,6 +16,7 @@ namespace Gazeus.DesafioMatch3.Core
 
         [Header("Controllers")]
         [SerializeField] private GameController _game;
+        [SerializeField] private ScoreController _score;
         [SerializeField] private HintController _hint;
         [SerializeField] private GameOverController _gameOver;
         [SerializeField] private FeedbackController _feedback;
@@ -45,10 +46,11 @@ namespace Gazeus.DesafioMatch3.Core
             ScoreService scoreService = new(_scoreConfig, _tileTypes);
 
             _boardView.Initialize(_tileTypes);
-            _game.Initialize(gameService, scoreService, _boardView, _scoreView, level);
+            _game.Initialize(gameService, _boardView, level);
+            _score.Initialize(scoreService, _scoreView, _boardView);
             _hint.Initialize(_game, _boardView, _hintButton);
             _gameOver.Initialize(_game, _gameOverScreen);
-            _feedback.Initialize(_game, _boardView, _hint, _effectsView, _feedbackConfig);
+            _feedback.Initialize(_game, _boardView, _hint, _score, _effectsView, _feedbackConfig);
         }
         #endregion
     }

@@ -3312,6 +3312,7 @@ GameObject:
   - component: {fileID: 1361904665}
   - component: {fileID: 1361904664}
   - component: {fileID: 1361904666}
+  - component: {fileID: 1361904667}
   m_Layer: 0
   m_Name: GameController
   m_TagString: Untagged
@@ -3410,8 +3411,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8f7f300e660ecb44b9ca2b3e3a80e908, type: 3}
   m_Name: 
   m_EditorClassIdentifier: DesafioMatch3::Gazeus.DesafioMatch3.Views.ScoreView
-  _popupContainer: {fileID: 1186241277}
-  _scorePopupPrefab: {fileID: 5457463013388392173, guid: 4aa8fd552b1296144a962cefe500ac51, type: 3}
   _scoreLabel: {fileID: 1584219848}
   _punchDuration: 0.3
   _punchScale: 0.25
@@ -3548,6 +3547,7 @@ MonoBehaviour:
   _scoreView: {fileID: 1584219847}
   _effectsView: {fileID: 2122123073}
   _game: {fileID: 1361904664}
+  _score: {fileID: 1361904667}
   _hint: {fileID: 1361904666}
   _gameOver: {fileID: 930000405}
   _feedback: {fileID: 151259598}
@@ -3604,6 +3604,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: DesafioMatch3::Gazeus.DesafioMatch3.Views.EffectsView
   _container: {fileID: 2122123074}
   _sortingOrder: 5
+  _popupContainer: {fileID: 1186241277}
+  _pointsPopupPrefab: {fileID: 5457463013388392173, guid: 4aa8fd552b1296144a962cefe500ac51, type: 3}
 --- !u!224 &2122123074
 RectTransform:
   m_ObjectHideFlags: 0
@@ -3623,6 +3625,18 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &1361904667
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1361904663}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2781512d369a5e74fada49190bbe2aef, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: DesafioMatch3::Gazeus.DesafioMatch3.Controllers.ScoreController
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

@@ -18,9 +18,7 @@ namespace Gazeus.DesafioMatch3.Controllers
         public event Action<int, int> SwapRejected;
 
         private GameService _gameService;
-        private ScoreService _scoreService;
         private BoardView _boardView;
-        private ScoreView _scoreView;
         private LevelConfig _level;
         private Move _availableMove;
         private bool _hasAvailableMove;
@@ -34,7 +32,6 @@ namespace Gazeus.DesafioMatch3.Controllers
             if (_boardView == null) return;
 
             _boardView.TileClicked -= OnTileClick;
-            _boardView.CascadeStarted -= RegisterScore;
             _boardView.CascadeFinished -= OnBoardSettled;
         }
 
@@ -45,32 +42,18 @@ namespace Gazeus.DesafioMatch3.Controllers
             Board board = _gameService.StartGame(_level);
             _boardView.CreateBoard(board);
 
-            _scoreService.Reset();
-            _scoreView.ResetScore(_scoreService.Score);
-
             EvaluateBoard();
         }
         #endregion
 
-        public void Initialize(GameService gameService, ScoreService scoreService,
-            BoardView boardView, ScoreView scoreView, LevelConfig level)
+        public void Initialize(GameService gameService, BoardView boardView, LevelConfig level)
         {
             _gameService = gameService;
-            _scoreService = scoreService;
             _boardView = boardView;
-            _scoreView = scoreView;
             _level = level;
 
             _boardView.TileClicked += OnTileClick;
-            _boardView.CascadeStarted += RegisterScore;
             _boardView.CascadeFinished += OnBoardSettled;
-        }
-
-        private void RegisterScore(BoardSequence sequence, int index)
-        {
-            int points = _scoreService.RegisterCascade(sequence.MatchedTypes, index);
-            _scoreView.SetScore(_scoreService.Score);
-            _scoreView.ShowPoints(points, _boardView.GetMatchCenter(sequence.MatchedPosition));
         }
 
         private void EvaluateBoard()

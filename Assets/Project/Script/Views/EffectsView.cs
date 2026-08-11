@@ -9,6 +9,8 @@ namespace Gazeus.DesafioMatch3.Views
     {
         [SerializeField] private RectTransform _container;
         [SerializeField] private int _sortingOrder = 5;
+        [SerializeField] private RectTransform _popupContainer;
+        [SerializeField] private ScorePopupView _pointsPopupPrefab;
 
         private PrefabPoolRegistry _pool;
 
@@ -42,6 +44,15 @@ namespace Gazeus.DesafioMatch3.Views
         {
             PlaySound(cue, pitchScale);
             Spawn(cue, worldPosition);
+        }
+
+        public void ShowPoints(int points, Vector3 worldPosition)
+        {
+            GameObject instance = _pool.Get(_pointsPopupPrefab.gameObject, _popupContainer);
+            instance.transform.position = worldPosition;
+
+            ScorePopupView popup = instance.GetComponent<ScorePopupView>();
+            popup.Play(points, () => _pool.Release(instance));
         }
     }
 }
