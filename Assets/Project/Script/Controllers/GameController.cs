@@ -2,7 +2,6 @@ using System;
 using Gazeus.DesafioMatch3.Core;
 using Gazeus.DesafioMatch3.Models;
 using Gazeus.DesafioMatch3.ScriptableObjects;
-using Gazeus.DesafioMatch3.ScriptableObjects.Feedback;
 using Gazeus.DesafioMatch3.Views;
 using UnityEngine;
 
@@ -13,20 +12,16 @@ namespace Gazeus.DesafioMatch3.Controllers
         public event Action<Move> MoveAvailable;
         public event Action NoMovesLeft;
         public event Action PlayerActed;
-
-        [SerializeField] private BoardView _boardView;
-        [SerializeField] private ScoreView _scoreView;
-        [SerializeField] private EffectsView _effects;
-        [SerializeField] private EffectCue _selectCue;
-        [SerializeField] private EffectCue _deselectCue;
-        [SerializeField] private EffectCue _invalidSwapCue;
-        [SerializeField] private ScoreConfig _scoreConfig;
-        [SerializeField] private TileTypeConfig _tileTypeConfig;
-        [SerializeField] private SpecialMatchConfig _specialMatchConfig;
-        [SerializeField] private LevelConfig _level;
+        public event Action<int, int> TileSelected;
+        public event Action<int, int> SwapStarted;
+        public event Action SelectionCleared;
+        public event Action<int, int> SwapRejected;
 
         private GameService _gameService;
         private ScoreService _scoreService;
+        private BoardView _boardView;
+        private ScoreView _scoreView;
+        private LevelConfig _level;
         private Move _availableMove;
         private bool _hasAvailableMove;
         private bool _isAnimating;
@@ -34,17 +29,10 @@ namespace Gazeus.DesafioMatch3.Controllers
         private int _selectedY = -1;
 
         #region Unity
-        private void Awake()
-        {
-            _gameService = new GameService(_tileTypeConfig, _specialMatchConfig);
-            _scoreService = new ScoreService(_scoreConfig, _tileTypeConfig);
-            _boardView.TileClicked += OnTileClick;
-            _boardView.CascadeStarted += RegisterScore;
-            _boardView.CascadeFinished += OnBoardSettled;
-        }
-
         private void OnDestroy()
         {
+            if (_boardView == null) return;
+
             _boardView.TileClicked -= OnTileClick;
             _boardView.CascadeStarted -= RegisterScore;
             _boardView.CascadeFinished -= OnBoardSettled;
@@ -52,14 +40,9 @@ namespace Gazeus.DesafioMatch3.Controllers
 
         private void Start()
         {
-            LevelConfig level = LevelSession.Current != null ? LevelSession.Current : _level;
-            if (level == null)
-            {
-                Debug.LogError("GameController has no LevelConfig assigned.", this);
-                return;
-            }
+            if (_gameService == null) return;
 
-            Board board = _gameService.StartGame(level);
+            Board board = _gameService.StartGame(_level);
             _boardView.CreateBoard(board);
 
             _scoreService.Reset();
@@ -68,6 +51,20 @@ namespace Gazeus.DesafioMatch3.Controllers
             EvaluateBoard();
         }
         #endregion
+
+        public void Initialize(GameService gameService, ScoreService scoreService,
+            BoardView boardView, ScoreView scoreView, LevelConfig level)
+        {
+            _gameService = gameService;
+            _scoreService = scoreService;
+            _boardView = boardView;
+            _scoreView = scoreView;
+            _level = level;
+
+            _boardView.TileClicked += OnTileClick;
+            _boardView.CascadeStarted += RegisterScore;
+            _boardView.CascadeFinished += OnBoardSettled;
+        }
 
         private void RegisterScore(BoardSequence sequence, int index)
         {
@@ -109,16 +106,16 @@ namespace Gazeus.DesafioMatch3.Controllers
                     _selectedX = -1;
                     _selectedY = -1;
 
-                    _boardView.ClearSelection();
-                    _effects.PlaySound(_deselectCue);
+                    SelectionCleared?.Invoke();
 
                     NotifyMoveAvailability();
                 }
                 else
                 {
                     _isAnimating = true;
-                    _boardView.ClearSelection();
-                    _effects.PlaySound(_selectCue);
+
+                    SwapStarted?.Invoke(x, y);
+
                     _boardView.SwapTiles(_selectedX, _selectedY, x, y).onComplete += () =>
                     {
                         bool isValid = _gameService.IsValidMovement(_selectedX, _selectedY, x, y);
@@ -128,7 +125,8 @@ namespace Gazeus.DesafioMatch3.Controllers
                         }
                         else
                         {
-                            _effects.Play(_invalidSwapCue, _boardView.GetTilePosition(x, y));
+                            SwapRejected?.Invoke(x, y);
+
                             _boardView.SwapTiles(x, y, _selectedX, _selectedY).onComplete += () =>
                             {
                                 _isAnimating = false;
@@ -146,8 +144,7 @@ namespace Gazeus.DesafioMatch3.Controllers
                 _selectedX = x;
                 _selectedY = y;
 
-                _boardView.SetSelected(x, y);
-                _effects.PlaySound(_selectCue);
+                TileSelected?.Invoke(x, y);
             }
         }
     }

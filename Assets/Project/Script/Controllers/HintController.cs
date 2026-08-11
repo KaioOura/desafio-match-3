@@ -1,3 +1,4 @@
+using System;
 using Gazeus.DesafioMatch3.Models;
 using Gazeus.DesafioMatch3.Views;
 using UnityEngine;
@@ -6,30 +7,27 @@ namespace Gazeus.DesafioMatch3.Controllers
 {
     public class HintController : MonoBehaviour
     {
-        [SerializeField] private GameController _game;
-        [SerializeField] private BoardView _boardView;
-        [SerializeField] private ButtonView _hintButton;
+        public event Action HintShown;
+
         [Tooltip("Seconds of player inactivity before the hint shows up on its own.")]
         [SerializeField] private float _delay = 5f;
 
+        private GameController _game;
+        private BoardView _boardView;
+        private ButtonView _hintButton;
         private Move _move;
         private bool _armed;
         private bool _isVisible;
         private float _idleTime;
 
         #region Unity
-        private void Awake()
-        {
-            _game.MoveAvailable += OnMoveAvailable;
-            _game.PlayerActed += OnPlayerActed;
-
-            if (_hintButton != null) _hintButton.Clicked += Show;
-        }
-
         private void OnDestroy()
         {
-            _game.MoveAvailable -= OnMoveAvailable;
-            _game.PlayerActed -= OnPlayerActed;
+            if (_game != null)
+            {
+                _game.MoveAvailable -= OnMoveAvailable;
+                _game.PlayerActed -= OnPlayerActed;
+            }
 
             if (_hintButton != null) _hintButton.Clicked -= Show;
         }
@@ -45,12 +43,26 @@ namespace Gazeus.DesafioMatch3.Controllers
         }
         #endregion
 
+        public void Initialize(GameController game, BoardView boardView, ButtonView hintButton)
+        {
+            _game = game;
+            _boardView = boardView;
+            _hintButton = hintButton;
+
+            _game.MoveAvailable += OnMoveAvailable;
+            _game.PlayerActed += OnPlayerActed;
+
+            if (_hintButton != null) _hintButton.Clicked += Show;
+        }
+
         private void Show()
         {
             if (!_armed || _isVisible) return;
 
             _isVisible = true;
-            _boardView.ShowHint(_move);
+            _boardView.Highlights.ShowHint(_move);
+
+            HintShown?.Invoke();
         }
 
         private void OnMoveAvailable(Move move)
@@ -68,7 +80,7 @@ namespace Gazeus.DesafioMatch3.Controllers
             if (!_isVisible) return;
 
             _isVisible = false;
-            _boardView.ClearHint();
+            _boardView.Highlights.ClearHint();
         }
     }
 }

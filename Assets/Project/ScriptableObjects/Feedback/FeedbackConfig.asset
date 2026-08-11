@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f688dc5b2be15b242b2817a330de9393, type: 3}
+  m_Name: FeedbackConfig
+  m_EditorClassIdentifier: DesafioMatch3::Gazeus.DesafioMatch3.ScriptableObjects.Feedback.FeedbackConfig
+  _select: {fileID: 11400000, guid: 47df91da87cfd3f4c8bdcebef9686c59, type: 2}
+  _deselect: {fileID: 11400000, guid: fb829e142fda8e84ba4ca731cc0a7b81, type: 2}
+  _invalidSwap: {fileID: 11400000, guid: 17310777d2082b542a1652b4972819ca, type: 2}
+  _match: {fileID: 11400000, guid: 77e171ba31b38b34c8b494ab43e410ba, type: 2}
+  _spawn: {fileID: 11400000, guid: 631db2d95395368458ba82fd14d35796, type: 2}
+  _hint: {fileID: 11400000, guid: 606cac3543e8de84bb3c318174d30fce, type: 2}
+  _gameOver: {fileID: 11400000, guid: 695c05a953da5d54599654d7aaccbb1a, type: 2}
