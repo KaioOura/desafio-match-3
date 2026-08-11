@@ -4,6 +4,7 @@ using DG.Tweening;
 using Gazeus.DesafioMatch3.Core.Pooling;
 using Gazeus.DesafioMatch3.Models;
 using Gazeus.DesafioMatch3.ScriptableObjects;
+using Gazeus.DesafioMatch3.ScriptableObjects.Feedback;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -19,12 +20,18 @@ namespace Gazeus.DesafioMatch3.Views
         [SerializeField] private GridCellSizeFitter _cellSizeFitter;
         [SerializeField] private TileTypeConfig _tileTypeConfig;
         [SerializeField] private TileSpotView _tileSpotPrefab;
+        [SerializeField] private EffectsView _effects;
+        [SerializeField] private EffectCue _matchCue;
+        [SerializeField] private EffectCue _spawnCue;
+        [SerializeField] private EffectCue _hintCue;
+        [SerializeField] private float _cascadePitchStep = 1f;
 
         private PrefabPoolRegistry _tilePools;
         private GameObject[,] _tiles;
         private TileSpotView[,] _tileSpots;
         private TileSpotView _hintFrom;
         private TileSpotView _hintTo;
+        private TileSpotView _selected;
 
         #region Unity
         private void Awake()
@@ -36,6 +43,7 @@ namespace Gazeus.DesafioMatch3.Views
         public void CreateBoard(Board board)
         {
             ClearHint();
+            ClearSelection();
 
             _cellSizeFitter.SetBoardSize(board.Width, board.Height);
             _tiles = new GameObject[board.Width, board.Height];
@@ -91,7 +99,7 @@ namespace Gazeus.DesafioMatch3.Views
             CascadeStarted?.Invoke(step, index);
 
             Sequence sequence = DOTween.Sequence();
-            sequence.Append(DestroyTiles(step.MatchedPosition));
+            sequence.Append(ReleaseTiles(step.MatchedPosition, index));
             sequence.Append(MoveTiles(step.MovedTiles));
             sequence.Append(CreateTile(step.AddedTiles));
 
@@ -102,6 +110,8 @@ namespace Gazeus.DesafioMatch3.Views
 
         private Tween CreateTile(List<AddedTileInfo> addedTiles)
         {
+            if (addedTiles.Count > 0) _effects.PlaySound(_spawnCue);
+
             Sequence sequence = DOTween.Sequence();
             for (int i = 0; i < addedTiles.Count; i++)
             {
@@ -122,17 +132,38 @@ namespace Gazeus.DesafioMatch3.Views
 
             return sequence;
         }
-        
-        public Tween ReleaseTiles(List<Vector2Int> matchedPosition)
+
+        private Tween ReleaseTiles(List<Vector2Int> matchedPosition, int cascadeStep)
         {
+            _effects.PlaySound(_matchCue, Mathf.Pow(2f, cascadeStep * _cascadePitchStep / 12f));
+
             for (int i = 0; i < matchedPosition.Count; i++)
             {
                 Vector2Int position = matchedPosition[i];
+                TileSpotView tileSpot = _tileSpots[position.x, position.y];
+
+                _effects.Spawn(_matchCue, tileSpot.transform.position);
+
                 _tilePools.Release(_tiles[position.x, position.y]);
                 _tiles[position.x, position.y] = null;
             }
 
             return DOVirtual.DelayedCall(0.2f, () => { });
+        }
+
+        public void SetSelected(int x, int y)
+        {
+            ClearSelection();
+
+            _selected = _tileSpots[x, y];
+            _selected.SetSelected(true);
+        }
+
+        public void ClearSelection()
+        {
+            if (_selected != null) _selected.SetSelected(false);
+
+            _selected = null;
         }
 
         public void ShowHint(Move move)
@@ -144,6 +175,8 @@ namespace Gazeus.DesafioMatch3.Views
 
             _hintFrom.SetHighlighted(true);
             _hintTo.SetHighlighted(true);
+
+            _effects.PlaySound(_hintCue);
         }
 
         public void ClearHint()
@@ -153,6 +186,11 @@ namespace Gazeus.DesafioMatch3.Views
 
             _hintFrom = null;
             _hintTo = null;
+        }
+
+        public Vector3 GetTilePosition(int x, int y)
+        {
+            return _tileSpots[x, y].transform.position;
         }
 
         public Vector3 GetMatchCenter(List<Vector2Int> positions)
@@ -205,7 +243,7 @@ namespace Gazeus.DesafioMatch3.Views
         #region Events
         private void TileSpot_Clicked(int x, int y)
         {
-            TileClicked(x, y);
+            TileClicked?.Invoke(x, y);
         }
         #endregion
     }

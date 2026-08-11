@@ -15,6 +15,10 @@ namespace Gazeus.DesafioMatch3.Views
         [SerializeField] private Image _highlight;
         [SerializeField] private Color _highlightColor = new(1f, 1f, 1f, 0.55f);
         [SerializeField] private float _highlightPulseDuration = 0.45f;
+        [SerializeField] private Image _selection;
+        [SerializeField] private Color _selectionColor = new(0.3f, 0.85f, 1f, 0.5f);
+        [SerializeField] private float _selectionPunchScale = 0.12f;
+        [SerializeField] private float _selectionPunchDuration = 0.25f;
 
         private Tween _highlightTween;
         private int _x;
@@ -71,6 +75,22 @@ namespace Gazeus.DesafioMatch3.Views
             _highlightTween = DOTween
                 .To(() => _highlight.color.a, SetHighlightAlpha, _highlightColor.a, _highlightPulseDuration)
                 .SetLoops(-1, LoopType.Yoyo);
+        }
+
+        public void SetSelected(bool selected)
+        {
+            if (_selection == null) return;
+
+            _selection.transform.SetAsLastSibling();
+            _selection.color = _selectionColor;
+            _selection.enabled = selected;
+
+            if (!selected) return;
+
+            Transform selectionTransform = _selection.transform;
+            selectionTransform.DOKill(true);
+            selectionTransform.localScale = Vector3.one;
+            selectionTransform.DOPunchScale(Vector3.one * _selectionPunchScale, _selectionPunchDuration, 6, 0.6f);
         }
 
         public void SetPosition(int x, int y)

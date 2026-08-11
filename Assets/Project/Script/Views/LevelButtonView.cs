@@ -1,4 +1,6 @@
 using System;
+using Gazeus.DesafioMatch3.Core.Audio;
+using Gazeus.DesafioMatch3.ScriptableObjects.Feedback;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -11,6 +13,7 @@ namespace Gazeus.DesafioMatch3.Views
 
         [SerializeField] private Button _button;
         [SerializeField] private TMP_Text _label;
+        [SerializeField] private SoundCue _clickCue;
 
         private int _index;
 
@@ -34,6 +37,8 @@ namespace Gazeus.DesafioMatch3.Views
 
         private void OnClick()
         {
+            AudioService.Instance.Play(_clickCue);
+
             Clicked?.Invoke(_index);
         }
     }
